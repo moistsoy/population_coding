@@ -14,7 +14,6 @@ extern void _kdr_reg(void);
 extern void _kdyn_reg(void);
 extern void _naf_reg(void);
 extern void _nap_reg(void);
-extern void _nmda_reg(void);
 
 void modl_reg() {
   if (!nrn_nobanner_) if (nrnmpi_myid < 1) {
@@ -27,7 +26,6 @@ void modl_reg() {
     fprintf(stderr, " \"kdyn.mod\"");
     fprintf(stderr, " \"naf.mod\"");
     fprintf(stderr, " \"nap.mod\"");
-    fprintf(stderr, " \"nmda.mod\"");
     fprintf(stderr, "\n");
   }
   _cadyn_reg();
@@ -38,7 +36,6 @@ void modl_reg() {
   _kdyn_reg();
   _naf_reg();
   _nap_reg();
-  _nmda_reg();
 }
 
 #if defined(__cplusplus)

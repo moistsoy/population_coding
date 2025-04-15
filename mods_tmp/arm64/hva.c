@@ -299,11 +299,11 @@ static int  rate ( _threadargsprotocomma_ double _lv ) {
    if ( fabs ( _lvz ) < 1e-04 ) {
      _lvz = _lvz + 0.00001 ;
      zinf = 1.0 / ( 1.0 + exp ( _lvz / 18.9 ) ) ;
-     ztau = 140.0 ;
+     ztau = 420.0 ;
      }
    else {
      zinf = 1.0 / ( 1.0 + exp ( _lvz / 18.9 ) ) ;
-     ztau = 140.0 ;
+     ztau = 420.0 ;
      }
     return 0; }
  
@@ -611,13 +611,23 @@ static const char* nmodl_file_text =
   "if (fabs(vz)<1e-04){\n"
   "	  vz = vz+0.00001\n"
   "	  zinf = 1/(1+exp(vz/18.9))\n"
-  "	  ztau = 140\n"
+  "	  ztau = 420\n"
   "}else{\n"
   "	  zinf = 1/(1+exp(vz/18.9))\n"
-  "	  ztau = 140\n"
-  "}\n"
+  "	  ztau = 420	\n"
+  "	}\n"
   "}\n"
   "\n"
-  "UNITSON\n"
+  "UNITSON	\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
+  "\n"
   ;
 #endif

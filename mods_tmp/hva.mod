@@ -78,11 +78,21 @@ if (fabs(vu)<1e-04){
 if (fabs(vz)<1e-04){
 	  vz = vz+0.00001
 	  zinf = 1/(1+exp(vz/18.9))
-	  ztau = 140
+	  ztau = 420
 }else{
 	  zinf = 1/(1+exp(vz/18.9))
-	  ztau = 140
-}
+	  ztau = 420	
+	}
 }
 
-UNITSON
+UNITSON	
+
+
+
+
+
+
+
+
+
+
