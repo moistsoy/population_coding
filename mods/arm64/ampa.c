@@ -22,14 +22,14 @@ extern int _method3;
 extern double hoc_Exp(double);
 #endif
  
-#define nrn_init _nrn_init__nmda
-#define _nrn_initial _nrn_initial__nmda
-#define nrn_cur _nrn_cur__nmda
-#define _nrn_current _nrn_current__nmda
-#define nrn_jacob _nrn_jacob__nmda
-#define nrn_state _nrn_state__nmda
-#define _net_receive _net_receive__nmda 
-#define state state__nmda 
+#define nrn_init _nrn_init__ampa
+#define _nrn_initial _nrn_initial__ampa
+#define nrn_cur _nrn_cur__ampa
+#define _nrn_current _nrn_current__ampa
+#define nrn_jacob _nrn_jacob__ampa
+#define nrn_state _nrn_state__ampa
+#define _net_receive _net_receive__ampa 
+#define state state__ampa 
  
 #define _threadargscomma_ _p, _ppvar, _thread, _nt,
 #define _threadargsprotocomma_ double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt,
@@ -48,36 +48,38 @@ extern double hoc_Exp(double);
 #define tau1_columnindex 0
 #define tau2 _p[1]
 #define tau2_columnindex 1
-#define e _p[2]
-#define e_columnindex 2
-#define gmax _p[3]
-#define gmax_columnindex 3
-#define tau_s _p[4]
-#define tau_s_columnindex 4
-#define i _p[5]
-#define i_columnindex 5
-#define A _p[6]
-#define A_columnindex 6
-#define B _p[7]
-#define B_columnindex 7
-#define g _p[8]
-#define g_columnindex 8
-#define mgblock _p[9]
-#define mgblock_columnindex 9
-#define s _p[10]
-#define s_columnindex 10
+#define gmax _p[2]
+#define gmax_columnindex 2
+#define e _p[3]
+#define e_columnindex 3
+#define USE _p[4]
+#define USE_columnindex 4
+#define t_rec _p[5]
+#define t_rec_columnindex 5
+#define i _p[6]
+#define i_columnindex 6
+#define A _p[7]
+#define A_columnindex 7
+#define B _p[8]
+#define B_columnindex 8
+#define R _p[9]
+#define R_columnindex 9
+#define g _p[10]
+#define g_columnindex 10
 #define factor _p[11]
 #define factor_columnindex 11
 #define DA _p[12]
 #define DA_columnindex 12
 #define DB _p[13]
 #define DB_columnindex 13
-#define v _p[14]
-#define v_columnindex 14
-#define _g _p[15]
-#define _g_columnindex 15
-#define _tsav _p[16]
-#define _tsav_columnindex 16
+#define DR _p[14]
+#define DR_columnindex 14
+#define v _p[15]
+#define v_columnindex 15
+#define _g _p[16]
+#define _g_columnindex 16
+#define _tsav _p[17]
+#define _tsav_columnindex 17
 #define _nd_area  *_ppvar[0]._pval
  
 #if MAC
@@ -154,9 +156,9 @@ extern void hoc_reg_nmodl_filename(int, const char*);
  static HocParmUnits _hoc_parm_units[] = {
  "tau1", "ms",
  "tau2", "ms",
- "e", "mV",
  "gmax", "uS",
- "tau_s", "ms",
+ "e", "mV",
+ "t_rec", "ms",
  "A", "uS",
  "B", "uS",
  "i", "nA",
@@ -164,6 +166,7 @@ extern void hoc_reg_nmodl_filename(int, const char*);
 };
  static double A0 = 0;
  static double B0 = 0;
+ static double R0 = 0;
  static double delta_t = 0.01;
  /* connect global user variables to hoc */
  static DoubScal hoc_scdoub[] = {
@@ -192,17 +195,19 @@ static void _ode_matsol(NrnThread*, _Memb_list*, int);
  /* connect range variables in _p that hoc is supposed to know about */
  static const char *_mechanism[] = {
  "7.7.0",
-"nmda",
+"ampa",
  "tau1",
  "tau2",
- "e",
  "gmax",
- "tau_s",
+ "e",
+ "USE",
+ "t_rec",
  0,
  "i",
  0,
  "A",
  "B",
+ "R",
  0,
  0};
  
@@ -216,16 +221,17 @@ static void nrn_alloc(Prop* _prop) {
 	_p = nrn_point_prop_->param;
 	_ppvar = nrn_point_prop_->dparam;
  }else{
- 	_p = nrn_prop_data_alloc(_mechtype, 17, _prop);
+ 	_p = nrn_prop_data_alloc(_mechtype, 18, _prop);
  	/*initialize range parameters*/
- 	tau1 = 1;
- 	tau2 = 40;
+ 	tau1 = 0.55;
+ 	tau2 = 2.2;
+ 	gmax = 0.001;
  	e = 0;
- 	gmax = 0.0001;
- 	tau_s = 0.1;
+ 	USE = 0.6;
+ 	t_rec = 800;
   }
  	_prop->param = _p;
- 	_prop->param_size = 17;
+ 	_prop->param_size = 18;
   if (!nrn_point_prop_) {
  	_ppvar = nrn_prop_datum_alloc(_mechtype, 3, _prop);
   }
@@ -246,7 +252,7 @@ extern void _nrn_thread_table_reg(int, void(*)(double*, Datum*, Datum*, NrnThrea
 extern void hoc_register_tolerance(int, HocStateTolerance*, Symbol***);
 extern void _cvode_abstol( Symbol**, double*, int);
 
- void _nmda_reg() {
+ void _ampa_reg() {
 	int _vectorized = 1;
   _initlists();
  	_pointtype = point_register_mech(_mechanism,
@@ -259,7 +265,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
   hoc_reg_nmodl_text(_mechtype, nmodl_file_text);
   hoc_reg_nmodl_filename(_mechtype, nmodl_filename);
 #endif
-  hoc_register_prop_size(_mechtype, 17, 3);
+  hoc_register_prop_size(_mechtype, 18, 3);
   hoc_register_dparam_semantics(_mechtype, 0, "area");
   hoc_register_dparam_semantics(_mechtype, 1, "pntproc");
   hoc_register_dparam_semantics(_mechtype, 2, "cvodeieq");
@@ -268,7 +274,7 @@ extern void _cvode_abstol( Symbol**, double*, int);
  pnt_receive[_mechtype] = _net_receive;
  pnt_receive_size[_mechtype] = 1;
  	hoc_register_var(hoc_scdoub, hoc_vdoub, hoc_intfunc);
- 	ivoc_help("help ?1 nmda /Users/ryu/Documents/Project/Population Coding/codes/mods/nmda.mod\n");
+ 	ivoc_help("help ?1 ampa /Users/ryu/Documents/Project/Population Coding/codes/mods/ampa.mod\n");
  hoc_register_limits(_mechtype, _hoc_parm_limits);
  hoc_register_units(_mechtype, _hoc_parm_units);
  }
@@ -282,25 +288,28 @@ static void _modl_cleanup(){ _match_recurse=1;}
  
 static int _ode_spec1(_threadargsproto_);
 /*static int _ode_matsol1(_threadargsproto_);*/
- static int _slist1[2], _dlist1[2];
+ static int _slist1[3], _dlist1[3];
  static int state(_threadargsproto_);
  
 /*CVODE*/
  static int _ode_spec1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {int _reset = 0; {
    DA = - A / tau1 ;
    DB = - B / tau2 ;
+   DR = ( 1.0 - R ) / t_rec ;
    }
  return _reset;
 }
  static int _ode_matsol1 (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) {
  DA = DA  / (1. - dt*( ( - 1.0 ) / tau1 )) ;
  DB = DB  / (1. - dt*( ( - 1.0 ) / tau2 )) ;
+ DR = DR  / (1. - dt*( ( ( ( - 1.0 ) ) ) / t_rec )) ;
   return 0;
 }
  /*END CVODE*/
  static int state (double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt) { {
     A = A + (1. - exp(dt*(( - 1.0 ) / tau1)))*(- ( 0.0 ) / ( ( - 1.0 ) / tau1 ) - A) ;
     B = B + (1. - exp(dt*(( - 1.0 ) / tau2)))*(- ( 0.0 ) / ( ( - 1.0 ) / tau2 ) - B) ;
+    R = R + (1. - exp(dt*(( ( ( - 1.0 ) ) ) / t_rec)))*(- ( ( ( 1.0 ) ) / t_rec ) / ( ( ( ( - 1.0 ) ) ) / t_rec ) - R) ;
    }
   return 0;
 }
@@ -310,27 +319,38 @@ static void _net_receive (Point_process* _pnt, double* _args, double _lflag)
    _thread = (Datum*)0; _nt = (NrnThread*)_pnt->_vnt;   _p = _pnt->_prop->param; _ppvar = _pnt->_prop->dparam;
   if (_tsav > t){ extern char* hoc_object_name(); hoc_execerror(hoc_object_name(_pnt->ob), ":Event arrived out of order. Must call ParallelContext.set_maxstep AFTER assigning minimum NetCon.delay");}
  _tsav = t; {
-     if (nrn_netrec_state_adjust && !cvode_active_){
+   if ( R > 1e-6 ) {
+       if (nrn_netrec_state_adjust && !cvode_active_){
     /* discon state adjustment for cnexp case (rate uses no local variable) */
     double __state = A;
-    double __primary = (A + factor * _args[0]) - __state;
+    double __primary = (A + _args[0] * USE * R) - __state;
      __primary += ( 1. - exp( 0.5*dt*( ( - 1.0 ) / tau1 ) ) )*( - ( 0.0 ) / ( ( - 1.0 ) / tau1 ) - __primary );
     A += __primary;
   } else {
- A = A + factor * _args[0] ;
-     }
+ A = A + _args[0] * USE * R ;
+       }
    if (nrn_netrec_state_adjust && !cvode_active_){
     /* discon state adjustment for cnexp case (rate uses no local variable) */
     double __state = B;
-    double __primary = (B + factor * _args[0]) - __state;
+    double __primary = (B + _args[0] * USE * R) - __state;
      __primary += ( 1. - exp( 0.5*dt*( ( - 1.0 ) / tau2 ) ) )*( - ( 0.0 ) / ( ( - 1.0 ) / tau2 ) - __primary );
     B += __primary;
   } else {
- B = B + factor * _args[0] ;
-     }
- } }
+ B = B + _args[0] * USE * R ;
+       }
+   if (nrn_netrec_state_adjust && !cvode_active_){
+    /* discon state adjustment for cnexp case (rate uses no local variable) */
+    double __state = R;
+    double __primary = (R * ( 1.0 - USE )) - __state;
+     __primary += ( 1. - exp( 0.5*dt*( ( ( ( - 1.0 ) ) ) / t_rec ) ) )*( - ( ( ( 1.0 ) ) / t_rec ) / ( ( ( ( - 1.0 ) ) ) / t_rec ) - __primary );
+    R += __primary;
+  } else {
+ R = R * ( 1.0 - USE ) ;
+       }
+ }
+   } }
  
-static int _ode_count(int _type){ return 2;}
+static int _ode_count(int _type){ return 3;}
  
 static void _ode_spec(NrnThread* _nt, _Memb_list* _ml, int _type) {
    double* _p; Datum* _ppvar; Datum* _thread;
@@ -348,7 +368,7 @@ static void _ode_map(int _ieq, double** _pv, double** _pvdot, double* _pp, Datum
 	double* _p; Datum* _ppvar;
  	int _i; _p = _pp; _ppvar = _ppd;
 	_cvode_ieq = _ieq;
-	for (_i=0; _i < 2; ++_i) {
+	for (_i=0; _i < 3; ++_i) {
 		_pv[_i] = _pp + _slist1[_i];  _pvdot[_i] = _pp + _dlist1[_i];
 		_cvode_abstol(_atollist, _atol, _i);
 	}
@@ -374,17 +394,15 @@ static void initmodel(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt)
   int _i; double _save;{
   A = A0;
   B = B0;
+  R = R0;
  {
-   double _ltp ;
- A = 0.0 ;
+   A = 0.0 ;
    B = 0.0 ;
-   s = 1.0 ;
+   R = 1.0 ;
    if ( tau1 / tau2 > 0.9999 ) {
      tau1 = 0.9999 * tau2 ;
      }
-   _ltp = ( tau1 * tau2 ) / ( tau2 - tau1 ) * log ( tau2 / tau1 ) ;
-   factor = - exp ( - _ltp / tau1 ) + exp ( - _ltp / tau2 ) ;
-   factor = 1.0 / factor ;
+   factor = 1.0 / ( exp ( - tau1 / tau2 ) - exp ( - tau1 / tau1 ) ) ;
    }
  
 }
@@ -416,9 +434,7 @@ for (_iml = 0; _iml < _cntml; ++_iml) {
 }
 
 static double _nrn_current(double* _p, Datum* _ppvar, Datum* _thread, NrnThread* _nt, double _v){double _current=0.;v=_v;{ {
-   mgblock = 1.50265 / ( 1.0 + 0.33 * exp ( - 0.06 * v ) ) ;
-   s = s * exp ( - 1.0 / tau_s ) + ( 1.0 - exp ( - 1.0 / tau_s ) ) * mgblock ;
-   g = gmax * ( B - A ) * s ;
+   g = gmax * ( B - A ) ;
    i = g * ( v - e ) ;
    }
  _current += i;
@@ -523,6 +539,7 @@ static void _initlists(){
   if (!_first) return;
  _slist1[0] = A_columnindex;  _dlist1[0] = DA_columnindex;
  _slist1[1] = B_columnindex;  _dlist1[1] = DB_columnindex;
+ _slist1[2] = R_columnindex;  _dlist1[2] = DR_columnindex;
 _first = 0;
 }
 
@@ -531,12 +548,12 @@ _first = 0;
 #endif
 
 #if NMODL_TEXT
-static const char* nmodl_filename = "/Users/ryu/Documents/Project/Population Coding/codes/mods/nmda.mod";
+static const char* nmodl_filename = "/Users/ryu/Documents/Project/Population Coding/codes/mods/ampa.mod";
 static const char* nmodl_file_text = 
   "NEURON {\n"
-  "    POINT_PROCESS nmda\n"
+  "    POINT_PROCESS ampa\n"
   "    NONSPECIFIC_CURRENT i\n"
-  "    RANGE tau1, tau2, e, gmax, tau_s, i\n"
+  "    RANGE tau1, tau2, gmax, e, i, USE, t_rec\n"
   "}\n"
   "\n"
   "UNITS {\n"
@@ -546,61 +563,55 @@ static const char* nmodl_file_text =
   "}\n"
   "\n"
   "PARAMETER {\n"
-  "    tau1 = 1.0 (ms)      : Fast time constant\n"
-  "    tau2 = 40.0 (ms)     : Slow time constant\n"
-  "    e = 0 (mV)           : Reversal potential\n"
-  "    gmax = 0.0001 (uS)   : Maximum conductance\n"
-  "    tau_s = 0.1 (ms)     : Gate time constant for Mg2+ block\n"
+  "    tau1 = 0.55 (ms)\n"
+  "    tau2 = 2.2 (ms)\n"
+  "    gmax = 0.001 (uS)\n"
+  "    e = 0 (mV)\n"
+  "    USE = 0.6\n"
+  "    t_rec = 800 (ms)\n"
   "}\n"
   "\n"
   "ASSIGNED {\n"
   "    v (mV)\n"
   "    i (nA)\n"
   "    g (uS)\n"
-  "    mgblock (1)\n"
-  "    s (1)         : Mg2+ gate variable\n"
-  "    factor (1)\n"
+  "    factor\n"
   "}\n"
   "\n"
   "STATE {\n"
   "    A (uS)\n"
   "    B (uS)\n"
+  "    R\n"
   "}\n"
   "\n"
   "INITIAL {\n"
-  "    LOCAL tp\n"
   "    A = 0\n"
   "    B = 0\n"
-  "    s = 1\n"
+  "    R = 1\n"
   "    if (tau1 / tau2 > 0.9999) {\n"
   "        tau1 = 0.9999 * tau2\n"
   "    }\n"
-  "    tp = (tau1 * tau2) / (tau2 - tau1) * log(tau2 / tau1)\n"
-  "    factor = -exp(-tp / tau1) + exp(-tp / tau2)\n"
-  "    factor = 1 / factor\n"
+  "    factor = 1 / (exp(-tau1 / tau2) - exp(-tau1 / tau1))\n"
   "}\n"
   "\n"
   "BREAKPOINT {\n"
   "    SOLVE state METHOD cnexp\n"
-  "\n"
-  "    : Mg2+ block as a voltage-dependent sigmoid\n"
-  "    mgblock = 1.50265 / (1 + 0.33 * exp(-0.06 * v))\n"
-  "\n"
-  "    : Update gating variable with exponential smoothing\n"
-  "    s = s * exp(-1 / tau_s) + (1 - exp(-1 / tau_s)) * mgblock\n"
-  "\n"
-  "    g = gmax * (B - A) * s\n"
+  "    g = gmax * (B - A)\n"
   "    i = g * (v - e)\n"
   "}\n"
   "\n"
   "DERIVATIVE state {\n"
   "    A' = -A / tau1\n"
   "    B' = -B / tau2\n"
+  "    R' = (1 - R) / t_rec\n"
   "}\n"
   "\n"
   "NET_RECEIVE(weight (1)) {\n"
-  "    A = A + factor * weight\n"
-  "    B = B + factor * weight\n"
+  "    if (R > 1e-6) {\n"
+  "        A = A + weight * USE * R\n"
+  "        B = B + weight * USE * R\n"
+  "        R = R * (1 - USE)\n"
+  "    }\n"
   "}\n"
   ;
 #endif

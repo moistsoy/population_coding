@@ -6,6 +6,7 @@ extern int nrn_nobanner_;
 extern "C" {
 #endif
 
+extern void _ampa_reg(void);
 extern void _cadyn_reg(void);
 extern void _hva_reg(void);
 extern void _ic_reg(void);
@@ -19,6 +20,7 @@ extern void _nmda_reg(void);
 void modl_reg() {
   if (!nrn_nobanner_) if (nrnmpi_myid < 1) {
     fprintf(stderr, "Additional mechanisms from files\n");
+    fprintf(stderr, " \"ampa.mod\"");
     fprintf(stderr, " \"cadyn.mod\"");
     fprintf(stderr, " \"hva.mod\"");
     fprintf(stderr, " \"ic.mod\"");
@@ -30,6 +32,7 @@ void modl_reg() {
     fprintf(stderr, " \"nmda.mod\"");
     fprintf(stderr, "\n");
   }
+  _ampa_reg();
   _cadyn_reg();
   _hva_reg();
   _ic_reg();
